@@ -1,0 +1,14 @@
+{
+    "name": "flowpack/monolog",
+    "type": "typo3-flow-package",
+    "description": "Monolog integration for Flow",
+    "require": {
+        "typo3/flow": "*",
+        "monolog/monolog": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flowpack\\Monolog": "Classes"
+        }
+    }
+}

@@ -1,0 +1,23 @@
+Flowpack:
+  Monolog:
+    logger:
+      securityLogger:
+        handler:
+          streamHandler:
+            arguments:
+              0: '%FLOW_PATH_DATA%Logs/Security_Development.log'
+      sqlLogger:
+        handler:
+          streamHandler:
+            arguments:
+              0: '%FLOW_PATH_DATA%Logs/Query_Development.log'
+TYPO3:
+  Flow:
+    log:
+      systemLogger:
+        backendOptions:
+          configuration:
+            handler:
+              streamHandler:
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/System_Development.log'
