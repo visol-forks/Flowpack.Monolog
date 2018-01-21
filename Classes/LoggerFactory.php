@@ -2,178 +2,184 @@
 namespace Flowpack\Monolog;
 
 use Monolog\Handler\HandlerInterface;
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Log\PsrLoggerFactoryInterface;
+use Neos\Utility\ObjectAccess;
+use Neos\Flow\Annotations as Flow;
 use Monolog\Logger;
-use TYPO3\Flow\Configuration\Exception\InvalidConfigurationException;
-use TYPO3\Flow\Utility\PositionalArraySorter;
+use Neos\Flow\Configuration\Exception\InvalidConfigurationException;
+use Neos\Utility\PositionalArraySorter;
 
 /**
  * Class LoggerFactory
  *
- * @Flow\Scope("singleton")
+ * @Flow\Proxy(false)
  */
-class LoggerFactory {
+class LoggerFactory implements PsrLoggerFactoryInterface
+{
+    /**
+     * @var array
+     */
+    protected $loggerInstances = [];
 
-	protected static $instance;
+    /**
+     * @var array
+     */
+    protected $handlerInstances = [];
 
-	/**
-	 * @var array
-	 */
-	protected $loggerInstances = [];
+    /**
+     * @var array
+     */
+    protected $configuration;
 
-	/**
-	 * @var array
-	 */
-	protected $handlerInstances = [];
+    /**
+     * LoggerFactory constructor.
+     *
+     * @param array $configuration
+     *
+     * @Flow\Autowiring(false)
+     */
+    public function __construct(array $configuration = [])
+    {
+        $this->configuration = $configuration;
+    }
 
-	/**
-	 * @var array
-	 */
-	protected $configuration;
+    /**
+     * @param array $configuration
+     * @return LoggerFactory|static
+     */
+    public static function create(array $configuration)
+    {
+        return new self($configuration);
+    }
 
-	/**
-	 * self made singleton
-	 */
-	protected function __construct() {}
+    /**
+     * @param string $identifier
+     * @return Logger|\Psr\Log\LoggerInterface
+     * @throws InvalidConfigurationException
+     */
+    public function get(string $identifier)
+    {
+        if (isset($this->loggerInstances[$identifier])) {
+            return $this->loggerInstances[$identifier];
+        }
 
-	/**
-	 * @param array $configuration
-	 */
-	public function injectConfiguration(array $configuration) {
-		$this->configuration = $configuration;
-	}
+        $configuration = $this->configuration[$identifier];
 
-	/**
-	 * @param string $identifier
-	 * @return Logger
-	 * @throws InvalidConfigurationException
-	 * @api
-	 */
-	public function create($identifier) {
-		if (!isset($this->configuration['logger'][$identifier])) {
-			throw new InvalidConfigurationException(sprintf('The required monolog configuration for the given identifier "%s" was not found. Please configure a logger with this identifier in "Flowpack.Monolog.logger"', $identifier), 1435842118);
-		}
+        $logger = new Logger($identifier);
 
-		return $this->createFromConfiguation($identifier, $this->configuration['logger'][$identifier]);
-	}
+        $handlerSorter = new PositionalArraySorter($configuration['handler']);
+        foreach ($handlerSorter->toArray() as $index => $handlerConfiguration) {
+            $handler = null;
+            if (is_string($handlerConfiguration)) {
+                $handler = $this->getConfiguredHandler($handlerConfiguration);
+            }
 
-	/**
-	 * Creates a monolog instance.
-	 *
-	 * @param string $identifier An identifier for the logger
-	 * @param array $configuration
-	 * @return Logger
-	 */
-	public function createFromConfiguation($identifier, array $configuration) {
-		if (isset($this->loggerInstances[$identifier])) {
-			return $this->loggerInstances[$identifier];
-		}
+            if (is_array($handlerConfiguration)) {
+                $handlerIdentifier = $identifier . md5(json_encode($handlerConfiguration));
+                $handler = $this->instanciateHandler($handlerIdentifier, $handlerConfiguration);
+            }
 
-		$logger = new Logger($identifier);
+            if ($handler !== null) {
+                $logger->pushHandler($handler);
+            }
+        }
 
-		$handlerSorter = new PositionalArraySorter($configuration['handler']);
-		foreach ($handlerSorter->toArray() as $index => $handlerConfiguration) {
-			if (is_string($handlerConfiguration)) {
-				$handler = $this->getConfiguredHandler($handlerConfiguration);
-			}
+        $this->loggerInstances[$identifier] = $logger;
+        return $logger;
+    }
 
-			if (is_array($handlerConfiguration)) {
-				$handlerIdentifier = $identifier . md5(json_encode($handlerConfiguration));
-				$handler = $this->instanciateHandler($handlerIdentifier, $handlerConfiguration);
-			}
+    /**
+     * @param array $configuration
+     */
+    public function injectConfiguration(array $configuration)
+    {
+        $this->configuration = $configuration;
+    }
 
-			if ($handler !== NULL) {
-				$logger->pushHandler($handler);
-			}
-		}
+    /**
+     * Creates a monolog instance.
+     *
+     * @param string $identifier An identifier for the logger
+     * @param array $configuration
+     * @return Logger
+     */
+    public function createFromConfiguation($identifier, array $configuration)
+    {
+        if (isset($this->loggerInstances[$identifier])) {
+            return $this->loggerInstances[$identifier];
+        }
 
-		$this->loggerInstances[$identifier] = $logger;
-		return $logger;
-	}
+        $logger = new Logger($identifier);
 
-	/**
-	 * @param $identifier
-	 * @return HandlerInterface
-	 * @throws InvalidConfigurationException
-	 * @api
-	 */
-	public function getConfiguredHandler($identifier) {
-		if (!isset($this->configuration['handler'][$identifier])) {
-			throw new InvalidConfigurationException(sprintf('The required handler configuration for the given identifier "%s" was not found. Please configure a logger with this identifier in "Flowpack.Monolog.handler"', $identifier), 1436767040);
-		}
+        $handlerSorter = new PositionalArraySorter($configuration['handler']);
+        foreach ($handlerSorter->toArray() as $index => $handlerConfiguration) {
+            if (is_string($handlerConfiguration)) {
+                $handler = $this->getConfiguredHandler($handlerConfiguration);
+            }
 
-		return $this->instanciateHandler($identifier, $this->configuration['handler'][$identifier]);
-	}
+            if (is_array($handlerConfiguration)) {
+                $handlerIdentifier = $identifier . md5(json_encode($handlerConfiguration));
+                $handler = $this->instanciateHandler($handlerIdentifier, $handlerConfiguration);
+            }
 
-	/**
-	 * Home brew singleton because it is used so early.
-	 *
-	 * @return LoggerFactory
-	 */
-	public static function getInstance() {
-		if (static::$instance === NULL) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
+            if ($handler !== null) {
+                $logger->pushHandler($handler);
+            }
+        }
 
-	/**
-	 * @param string $identifier
-	 * @param array $handlerConfiguration
-	 * @return HandlerInterface
-	 * @throws InvalidConfigurationException
-	 */
-	protected function instanciateHandler($identifier, $handlerConfiguration) {
-		if (!isset($this->handlerInstances[$identifier])) {
-			$handlerClass = isset($handlerConfiguration['className']) ? $handlerConfiguration['className'] : NULL;
+        $this->loggerInstances[$identifier] = $logger;
 
-			if (!class_exists($handlerClass)) {
-				throw new InvalidConfigurationException(sprintf('The given handler class "%s" does not exist, please check configuration for handler "%s".', $handlerClass, $identifier), 1436767219);
-			}
+        return $logger;
+    }
 
-			$arguments = (isset($handlerConfiguration['arguments']) && is_array($handlerConfiguration['arguments'])) ? $handlerConfiguration['arguments'] : [];
-			$this->handlerInstances[$identifier] = $this->instantiateClass($handlerClass, $arguments);
-		}
+    /**
+     * @param $identifier
+     * @return HandlerInterface
+     * @throws InvalidConfigurationException
+     * @api
+     */
+    public function getConfiguredHandler($identifier)
+    {
+        if (!isset($this->configuration['handler'][$identifier])) {
+            throw new InvalidConfigurationException(sprintf('The required handler configuration for the given identifier "%s" was not found. Please configure a logger with this identifier in "Flowpack.Monolog.handler"', $identifier), 1436767040);
+        }
 
-		return $this->handlerInstances[$identifier];
-	}
+        return $this->instanciateHandler($identifier, $this->configuration['handler'][$identifier]);
+    }
 
-	/**
-	 * Speed optimized alternative to ReflectionClass::newInstanceArgs()
-	 *
-	 * Duplicated from TYPO3\Flow\Object\ObjectManager to avoid dependency in order to be able to use for SystemLogging.
-	 *
-	 * @param string $className Name of the class to instantiate
-	 * @param array $arguments Arguments to pass to the constructor
-	 * @return object The object
-	 */
-	protected function instantiateClass($className, array $arguments) {
-		switch (count($arguments)) {
-			case 0:
-				$object = new $className();
-				break;
-			case 1:
-				$object = new $className($arguments[0]);
-				break;
-			case 2:
-				$object = new $className($arguments[0], $arguments[1]);
-				break;
-			case 3:
-				$object = new $className($arguments[0], $arguments[1], $arguments[2]);
-				break;
-			case 4:
-				$object = new $className($arguments[0], $arguments[1], $arguments[2], $arguments[3]);
-				break;
-			case 5:
-				$object = new $className($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4]);
-				break;
-			case 6:
-				$object = new $className($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4], $arguments[5]);
-				break;
-			default:
-				$class = new \ReflectionClass($className);
-				$object = $class->newInstanceArgs($arguments);
-		}
-		return $object;
-	}
+    /**
+     * Home brew singleton because it is used so early.
+     *
+     * @return LoggerFactory
+     */
+    public static function getInstance()
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+
+        return static::$instance;
+    }
+
+    /**
+     * @param string $identifier
+     * @param array $handlerConfiguration
+     * @return HandlerInterface
+     * @throws InvalidConfigurationException
+     */
+    protected function instanciateHandler($identifier, $handlerConfiguration)
+    {
+        if (!isset($this->handlerInstances[$identifier])) {
+            $handlerClass = isset($handlerConfiguration['className']) ? $handlerConfiguration['className'] : null;
+
+            if (!class_exists($handlerClass)) {
+                throw new InvalidConfigurationException(sprintf('The given handler class "%s" does not exist, please check configuration for handler "%s".', $handlerClass, $identifier), 1436767219);
+            }
+
+            $arguments = (isset($handlerConfiguration['arguments']) && is_array($handlerConfiguration['arguments'])) ? $handlerConfiguration['arguments'] : [];
+            $this->handlerInstances[$identifier] = ObjectAccess::instantiateClass($handlerClass, $arguments);
+        }
+
+        return $this->handlerInstances[$identifier];
+    }
 }

@@ -1,23 +1,28 @@
-Flowpack:
-  Monolog:
-    logger:
-      securityLogger:
-        handler:
-          streamHandler:
-            arguments:
-              0: '%FLOW_PATH_DATA%Logs/Security_Development.log'
-      sqlLogger:
-        handler:
-          streamHandler:
-            arguments:
-              0: '%FLOW_PATH_DATA%Logs/Query_Development.log'
-TYPO3:
+Neos:
   Flow:
     log:
-      systemLogger:
-        backendOptions:
-          configuration:
+      psr3:
+        loggerFactory: Flowpack\Monolog\LoggerFactory
+        'Flowpack\Monolog\LoggerFactory':
+          # Settings for TYPO3 Flow's default loggers
+          systemLogger:
             handler:
               streamHandler:
                 arguments:
                   0: '%FLOW_PATH_DATA%Logs/System_Development.log'
+          securityLogger:
+            handler:
+              streamHandler:
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/Security_Development.log'
+          sqlLogger:
+            handler:
+              streamHandler:
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/Query_Development.log'
+          i18nLogger:
+            handler:
+              streamHandler:
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/I18n_Development.log'
+

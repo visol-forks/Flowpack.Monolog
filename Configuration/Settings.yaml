@@ -1,66 +1,35 @@
-Flowpack:
-  Monolog:
-    handler:
-      defaultHandler:
-      defaultSecurityLogHandler:
-        className: 'Monolog\Handler\StreamHandler'
-        position: 100
-        arguments:
-          0: '%FLOW_PATH_DATA%Logs/Security.log'
-      defaultQueryLogHandler:
-        className: 'Monolog\Handler\StreamHandler'
-        position: 100
-        arguments:
-          0: '%FLOW_PATH_DATA%Logs/Query.log'
-
-    logger:
-      # name of the configuration
-      default:
-        # in here should be an array of handlers to configure for this logger configuration.
-        # "position" can be used to define the order of the handlers in case a logger is configured from multiple packages
-        handler:
-          streamHandler:
-            className: 'Monolog\Handler\StreamHandler'
-            position: 100
-            arguments:
-              0: '%FLOW_PATH_DATA%Logs/Default.log'
-      securityLogger:
-        handler:
-          streamHandler:
-            className: 'Monolog\Handler\StreamHandler'
-            position: 100
-            arguments:
-              0: '%FLOW_PATH_DATA%Logs/Security.log'
-      sqlLogger:
-        handler:
-          streamHandler:
-            className: 'Monolog\Handler\StreamHandler'
-            position: 100
-            arguments:
-              0: '%FLOW_PATH_DATA%Logs/Query.log'
-
-
-TYPO3:
+Neos:
   Flow:
     log:
-      # Settings for TYPO3 Flow's default loggers
-      systemLogger:
-        backend: Flowpack\Monolog\FlowBackendFacade
-        backendOptions:
-          identifier: systemLogger
-          configuration:
+      psr3:
+        loggerFactory: 'Flowpack\Monolog\LoggerFactory'
+        'Flowpack\Monolog\LoggerFactory':
+          # Settings for Flow's default loggers
+          systemLogger:
             handler:
               streamHandler:
                 className: 'Monolog\Handler\StreamHandler'
                 position: 100
                 arguments:
                   0: '%FLOW_PATH_DATA%Logs/System.log'
-
-      securityLogger:
-        backend: Flowpack\Monolog\FlowBackendFacade
-        backendOptions:
-          identifier: securityLogger
-      sqlLogger:
-        backend: Flowpack\Monolog\FlowBackendFacade
-        backendOptions:
-          identifier: sqlLogger
+          securityLogger:
+            handler:
+              streamHandler:
+                className: 'Monolog\Handler\StreamHandler'
+                position: 100
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/Security.log'
+          sqlLogger:
+            handler:
+              streamHandler:
+                className: 'Monolog\Handler\StreamHandler'
+                position: 100
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/Query.log'
+          i18nLogger:
+            handler:
+              streamHandler:
+                className: 'Monolog\Handler\StreamHandler'
+                position: 100
+                arguments:
+                  0: '%FLOW_PATH_DATA%Logs/I18n.log'

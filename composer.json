@@ -1,10 +1,10 @@
 {
     "name": "flowpack/monolog",
-    "type": "typo3-flow-package",
+    "type": "neos-package",
     "description": "Monolog integration for Flow",
     "require": {
-        "typo3/flow": "<4.0",
-        "monolog/monolog": "^1.0"
+        "typo3/flow": "~5.0 || dev-master",
+        "monolog/monolog": "^1.23"
     },
     "autoload": {
         "psr-4": {

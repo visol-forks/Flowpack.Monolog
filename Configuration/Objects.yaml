@@ -1,4 +1,6 @@
 Flowpack\Monolog\LoggerFactory:
   scope: singleton
-  factoryObjectName: Flowpack\Monolog\LoggerFactory
-  factoryMethodName: getInstance
+  autowiring: off
+
+Neos\Flow\Log\PsrLoggerFactoryInterface:
+  className: Flowpack\Monolog\LoggerFactory
