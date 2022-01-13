@@ -177,7 +177,7 @@ class LoggerFactory implements PsrLoggerFactoryInterface
             }
 
             $arguments = (isset($handlerConfiguration['arguments']) && is_array($handlerConfiguration['arguments'])) ? $handlerConfiguration['arguments'] : [];
-            $this->handlerInstances[$identifier] = ObjectAccess::instantiateClass($handlerClass, $arguments);
+            $this->handlerInstances[$identifier] = new $handlerClass(...$arguments);
         }
 
         return $this->handlerInstances[$identifier];
