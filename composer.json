@@ -3,7 +3,7 @@
     "type": "neos-package",
     "description": "Monolog integration for Flow",
     "require": {
-        "neos/flow": "~7.0 || ~8.0 || dev-master",
+        "neos/flow": "~7.0 || dev-master",
         "monolog/monolog": "^1.23"
     },
     "autoload": {
